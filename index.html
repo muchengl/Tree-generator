@@ -1,0 +1,422 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <meta itemprop="description" name="description" content="在线解析和生成括号法表示的树"/>
+    <meta itemprop="name" content="Look-tree"/>
+    <meta id="image" itemprop="image" content="https://ftp.bmp.ovh/imgs/2021/04/c5243f3db403052f.png"/>
+
+    <title>look-Tree</title>
+
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <!-- <script src="../js/jquery-3.4.1.js"></script> -->
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-1.9.0.min.js"></script>
+    <!-- <link href="../css/but.css" rel="stylesheet" type="text/css"/> -->
+    <style>
+        #topbox{
+            box-shadow: 2px 2px 2px 2px rgba(0,0,0,0.1);
+            cursor:pointer;
+            background-color: rgba(0,0,100,0.05);
+            width: 600px;padding: 30px;
+            border-radius: 50px;
+            margin: 0 auto;
+        }
+        #topbox:hover{
+            background-color: rgba(0,100,100,0.06);
+        }
+    </style>
+</head>
+
+<body>
+
+<div style="text-align: center">
+    <hr style="color: grey">
+    <div id="topbox" onclick="rand()">
+        <h1 onclick="rand()" style="cursor:pointer;color: black">Click here！</h1>
+        <h5 onclick="rand()" id="tit" style="cursor:pointer;">Designed by lhz in TUST 2021</h5><br>
+    </div>
+    <SCRIPT>
+        add(1);
+        function add(n){
+            $("#tit").empty();
+            if(n%3==1){
+                $("#tit").text("Click here to generate a random parenthesis expression！");
+            }else if(n%3==2){
+                $("#tit").text("Designed by lhz in TUST 2021 ");
+            }
+            else{
+                $("#tit").text("look-tree Beta v0.2. If you find a bug,contact the webmaster. Email：1049838691@qq.com");
+            }
+
+            setTimeout(function () {
+                add(n+1)
+            }, 10000);
+        }
+    </SCRIPT>
+    <br><input type="text" id="tree-str" style="width: 400px;height: 30px" placeholder="请在此处输入树的表达式,请保证每一个节点的值唯一"/>
+    <button onclick="draw()">点击转化</button><br><br>
+
+    <canvas style="width: 1200px;height: 2000px;background-color:rgba(178,200,187,0.2);position: relative" id="map">
+
+    </canvas>
+    <p id="bb" style="color: green">站长统计，网站访问量：</p>
+    <!-- <script>
+        $.post({
+            url:'/getcon',
+            success:function (data){
+                $('#bb').empty();
+                $('#bb').text("站长统计，网站总访问量:"+data);
+            }
+        })
+    </script> -->
+</div>
+<script>
+    var nodesXY=[]
+    var lines=[]
+    function draw(){
+        //numForEachDeep=[]
+        nodesXY=[]
+        lines=[]
+        nodeInEachDeep=[]
+        var root=treeStr();
+
+        dfsTree(root);
+
+        for(var i=0;i<nodeInEachDeep.length;i++) {
+            var s=''
+            for (var j = 0; j < nodeInEachDeep[i].length; j++) {
+                s += nodeInEachDeep[i][j].num + " ";
+            }
+            console.log(s)
+        }
+        console.log("================================")
+
+        var node=new Object();
+        node.num=nodeInEachDeep[0][0].num;
+        node.x=600;//此处先确定其中心位置
+        node.y=100;
+        node.childnum=nodeInEachDeep[0][0].childs.length
+        nodesXY.push(node)
+
+
+        var max=25;//能容纳的最大半径 ，会在后期更改
+        var kx=5;//空隙大小
+        for(var i=1;i<nodeInEachDeep.length;i++){//从第二层开始计算
+
+            var s='';
+            var binX=0;//记录当前层的开始位置
+            for(var j=0;j<nodeInEachDeep[i].length;j++){
+                s+=nodeInEachDeep[i][j].num+" ";
+
+                var preX=0;
+                var preY=0;
+                var childnum=0;
+                for(var k=0;k<nodesXY.length;k++){
+                    if(nodeInEachDeep[i][j].pre.num===nodesXY[k].num){
+                        preX=nodesXY[k].x;
+                        preY=nodesXY[k].y;
+                    }
+                }
+                childnum=nodeInEachDeep[i][j].pre.childs.length;
+                console.log("preX:"+preX)
+
+
+                var conpre=preX
+                while (preX-childnum*(max+kx/2) < binX){
+                    preX++;
+                }
+                //if(preX-childnum*(max+kx/2) < binX)
+
+                for(var k=0;k<childnum;k++){
+
+                    var node=new Object();
+                    node.num=nodeInEachDeep[i][j+k].num;
+                    node.y=preY+100;
+                    node.x=preX-childnum*(max+kx/2)+k*(max*2+kx)+max+kx/2;
+                    console.log(node.num+"开始位置："+node.x)
+                    nodesXY.push(node);
+
+
+                    //记录线的位置
+                    var l=new Object();
+                    l.bx=conpre;
+                    l.by=preY+max;
+                    l.ex=node.x;
+                    l.ey=node.y-max;
+                    lines.push(l)
+
+
+                }
+                binX=nodesXY[nodesXY.length-1].x+max+kx;//更新当前层的最后一个点的位置
+                j+=childnum-1;
+
+            }
+            console.log(s)
+        }
+
+
+        //拿到画布
+        var canvas = document.getElementById('map');
+        canvas.width=1200;
+        canvas.height=2000;
+        var context = canvas.getContext("2d");
+
+        for(var i=0;i<nodesXY.length;i++){
+            console.log(nodesXY[i].num)
+            drewTextInRound(nodesXY[i].x,nodesXY[i].y,max,nodesXY[i].num,context)
+        }
+        for(var i=0;i<lines.length;i++){
+            drewLine(lines[i].bx,lines[i].by,lines[i].ex,lines[i].ey,context)
+
+        }
+
+
+    }
+
+
+    //将字符串转化为树
+    function treeStr() {
+
+        //此处设定最外层没有括号！！！
+
+        var str=$("#tree-str").val();
+
+        if(str[0]==='('){
+            str=str.slice(1,str.length-1)
+        }
+        console.log(str)
+        var stack = [];//栈
+        var deep=1;//记录当前节点深度
+        var root=new Object();//保存根节点
+
+        for(var i=0;i<str.length;i++){
+
+            var node=new Object();
+            if(str[i]===' '){
+                continue;
+            }
+            if(str[i]==='('){//遇到括号，把前一个元素入栈，作为父亲
+
+                //
+                var s=cutstr(str,i,1);//向后找到当前节点的内容
+                //console.log(s+"   !!!!!!!!!!")
+                node.num=s;
+                node.deep=deep;
+                if(deep===1){//表示为首节点
+                    root=node;
+                    deep++;
+                    node.childs=[];//空
+                    node.pre=stack[stack.length-1];//栈顶元素为父元素
+                    stack.push(node);//入栈，表示一个root
+                    continue;
+                }
+                deep++;
+                node.childs=[];//空
+                node.pre=stack[stack.length-1];//栈顶元素为父元素
+                stack[stack.length-1].childs.push(node);
+                stack.push(node);//入栈，表示一个root
+            }
+            else if(str[i]===')'){
+                stack.pop();//表示上一个节点点所有字节点已经全部完毕，出栈
+                deep--;
+            }
+            else if(str[i]===','){//无效，跳过
+                continue;
+            }
+            else{//字符节点
+
+                //统计当前层有几个节点
+                // if(numForEachDeep.length<deep){
+                //     numForEachDeep.push(1)
+                // }
+                // else{
+                //     numForEachDeep[deep-1]++;
+                // }
+
+
+                var s=cutstr(str,i,0);//向后找到当前节点的内容
+                //console.log(s)
+                i+=s.length-1;
+                //console.log(str[i]+"!!!!!!!!!!!!")
+                node.num=s;
+                node.deep=deep;
+                node.childs=[]
+                node.pre=null;
+                if(deep===1){//根节点,不是孩子，不处理
+
+                }
+                else if(str[i+1]!='('){//子节点，设置信息;且不是一个跟节点
+                    node.pre=stack[stack.length-1];
+                    stack[stack.length-1].childs.push(node);
+                    console.log("当前节点为："+node.num+",当前节点的父亲为："+node.pre.num+",父亲节点的子孩子数量为："+node.pre.childs.length)
+
+                }
+
+            }
+        }
+
+        return root;
+    }
+
+    //切出整个字符串
+    function cutstr(str,i,key) {
+        if(key===1) {//向前切
+            for(var j=i-1;j>=0;j--){
+                if(str[j]===',' || str[j]==='('){
+                    return str.slice(j+1,i)
+                }
+                if(j===0 ){
+                    return str.slice(j,i)
+                }
+            }
+
+        }
+        else{//向后切
+            for(var j=i;j<str.length;j++){
+                if(str[j]===',' || str[j]===')' || str[j]==='(') {
+
+                    return str.slice(i, j)
+                }
+            }
+        }
+
+    }
+
+
+    var nodeInEachDeep=[]//顺序储存每一层的节点，方便后边一层一层画
+    //计算节点参数
+    function dfsTree(node) {
+        var deep=node.deep;
+        if(nodeInEachDeep.length<deep){
+            nodeInEachDeep.push([]);
+            nodeInEachDeep[deep-1].push(node);
+        }
+        else{
+            nodeInEachDeep[deep-1].push(node);
+        }
+
+        if(node.pre!=undefined)
+            console.log("当前节点为："+node.num+"，当前节点的深度为："+node.deep+",当前节点的父亲为："+node.pre.num+",当前节点的孩子数量为："+node.childs.length)
+        else
+            console.log("当前节点为："+node.num+"，当前节点的深度为："+node.deep+",当前节点的父亲为："+"null"+",当前节点的孩子数量为："+node.childs.length)
+
+        for(var i=0;i<node.childs.length;i++){
+            console.log("节点"+node.num+":")
+            dfsTree(node.childs[i]);
+        }
+    }
+</script>
+
+<script>
+    function drewTextInRound(x,y,r,text,context){
+
+        // 设置线条的颜色
+        context.strokeStyle = 'black';
+        // 设置线条的宽度
+        context.lineWidth = 2;
+
+
+
+        // 绘制直线
+        context.beginPath();
+        context.arc(x, y, r, 0, Math.PI * 2, false);
+
+        var w=1000;
+        var fontsize=300;
+        while(w>(2*r-r) || fontsize>(2*r-r)) {
+            context.font = fontsize+'px "微软雅黑"';
+            context.fillStyle = "black";
+            context.textBaseline = "middle";
+            w = context.measureText(text).width;
+            fontsize--;
+        }
+        console.log("字体大小："+fontsize+"px")
+
+
+        //console.log("宽度："+w+",高度："+h)
+        context.fillText(text, x-(w/2),y);
+
+
+        context.closePath();
+        context.stroke();
+    }
+    function drewLine(bx,by,ex,ey,context){
+
+        // 设置线条的颜色
+        context.strokeStyle = 'red';
+        // 设置线条的宽度
+        context.lineWidth = 1;
+
+        // 绘制直线
+        context.beginPath();
+        context.moveTo (bx,by);
+        context.lineTo (ex,ey);       //设置末端状态
+
+        context.closePath();
+        context.stroke();
+    }
+</script>
+
+
+<script>
+
+    function rand(){
+
+        var key=1;
+        var con=1;
+        var str=key+'(';
+
+        var i=1;
+        while(con!=0){
+
+            if(i>30){
+                if(str[str.length-1]==='('){
+                    key++;
+                    str+=key;
+                }
+                str+=')';
+                for(var j=0;j<con;j++){
+                    str+=')';
+                }
+                break;
+            }
+            var n=Math.ceil(Math.random()*10);
+            if(n>9){
+                if(str[str.length-1]==='('){
+                    key++;
+                    str+=key;
+                }
+                str+=')';
+                con--;
+
+            }
+            else if (n>3){//➕数字
+                key++;
+
+                if(str[str.length-1]!='(')
+                    str+=',';
+                str+=key;
+            }
+            else{
+                if(str[str.length-1]==='(' || str[str.length-1]===')'){
+                    continue
+                }
+                str+='(';
+                con++;
+            }
+            i++;
+        }
+        $("#tree-str").val(str);
+
+    }
+</script>
+
+</body>
+
+</html>
